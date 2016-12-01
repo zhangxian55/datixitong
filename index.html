@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>驾校一点通</title>
+	<style type="text/css">
+		*{
+			margin: 0;
+			padding: 0;
+		}
+		body{
+			font-family: "微软雅黑";
+		}
+		.box{
+			width: 700px;
+			overflow: hidden;
+			border: 1px solid #000;
+			margin: 50px auto;
+			padding: 20px;
+			height: 400px;
+		}
+		.box h3{
+			font-size: 22px;
+			line-height: 200%;
+			height: 80px;
+		}
+		.box .options{
+			line-height: 175%;
+			margin-bottom: 30px;
+			font-size: 20px;
+			height: 160px;
+			padding-top: 10px;
+		}
+		label{
+			cursor: pointer;
+		}
+		.btns input[type="button"]{
+			width: 80px;
+			height: 30px;
+		}
+		 .btns input[type="text"]{
+		 	width: 30px;
+		 }
+		 .info ul{
+		 	list-style: none;
+		 }
+		 .info ul li{
+		 	float: left;
+		 	margin-right: 10px;
+		 	line-height: 300%;
+		 }
+		 .ans{
+		 	height: 50px;
+		 	display: none;
+		 }
+		 .tip{
+		 	padding: 10px 20px;
+		 }
+		 .r{
+		 	background-color: yellowgreen;
+		 	color:black;
+		 }
+		 .w{
+		 	background-color: red;
+		 	color:white;
+		 }
+	</style>
+</head>
+<body>
+	<div class="box">
+		<h3>
+			
+		</h3>
+		<div class="options">
+			 
+		</div>
+		<div class="ans" id="ans">
+			<span class="tip w" id="tip">恭喜！正确</span>
+		</div>
+		<div class="btns">
+			<input type="button" value="上一题" id="prevBtn">
+			<input type="button" value="下一题" id="nextBtn">
+			跳转到
+			<input type="text" id="num">
+			<input type="button" value="go"  id="goBtn">
+			<input type="button" value="本题讨论"   id="taolunBtn">
+		</div>
+		<div class="info">
+			<ul>
+				<li>已答<span>0</span>题</li>
+				<li>正确<span>0</span>题</li>
+				<li>错误<span>0</span>题</li>
+				<li>正确率<span>0</span></li>
+			</ul>
+		</div>
+	</div>
+	
+	<script type="text/javascript" src="js/jquery-1.12.3.min.js"></script>
+	<script type="text/javascript">
+		//考试类，这是唯一的一个类
+		function Test(){
+			//题目盒子
+			this.$qDom = $("h3");
+			//选项盒子
+			this.$optionsBox = $(".options");
+			//检索本地数据库，看看之前有没有答题
+			var qid = localStorage.getItem("nowid");
+			if(qid != null){
+				//弹出确认框
+				var result = confirm("你曾经做到"  + qid + "题，是否继续？");
+				//题号
+				this.qid = result ?  qid : 1;
+			}else{
+				this.qid = 1;
+			}
+			//自己的tip和ans
+			this.$ans = $("#ans");
+			this.$tip = $("#tip");
+			//读取
+			this.getQuestion(this.qid);
+			//绑定监听
+			this.bindEvent();
+		}
+		//得到题目
+		Test.prototype.getQuestion = function(id){
+			var self = this;
+			//一、让结果框隐藏
+			this.$ans.hide();
+			//二、发出Ajax请求
+			$.ajax("http://mnks.jxedt.com/get_question?r=0.8672165235917422&index="+id+" ",{
+				"dataType" : "jsonp",
+				"success" : function(data){
+				if(typeof data == "string"){
+					data = JSON.parse(data);
+				}
+				//【2.1 题目上页面】
+				self.$qDom.html(self.qid + ".&nbsp;&nbsp;" + data.question);
+
+				//【2.2 选项上页面】根据类型，上DOM
+				//清空之前的所有选项
+				self.$optionsBox.empty();
+				//上新的选项
+				if(data.Type == "2"){
+					var arr = ["a","b","c","d"];
+					for(var i = 0 ; i < arr.length ; i++){
+						$("<p><label><input type='radio' name='opt' data-num='" + (i+1) + "'/>" + data[arr[i]] + "</label></p>").appendTo(self.$optionsBox)
+					}
+				}else if(data.Type == "1"){
+					$("<p><label><input type='radio' name='opt' data-num='1'/>正确</label></p>").appendTo(self.$optionsBox);
+					$("<p><label><input type='radio' name='opt' data-num='2'/>错误</label></p>").appendTo(self.$optionsBox);
+				}
+
+				//【2.3 绑定监听】。必须上一次绑一次，因为元素是全新的
+				self.$optionsBox.find("input").change(function(){
+					//【2.3.1 让所有选项都不能选择】
+					self.$optionsBox.find("input").attr("disabled","disabled");
+					
+					//【2.3.2 记录到本地数据库中】
+					//先读取出来
+					var resultObj = JSON.parse(localStorage.getItem("result"));
+					//看看本地有没有答过
+					if(resultObj && resultObj.results[id]){
+						var alreadyAnswered = true;
+					}
+					//判断是不是第一次
+					if(resultObj == null){
+						resultObj = {"results" : []};
+					}
+					//修改
+					resultObj.results[id] = $(this).attr("data-num");
+					//存
+					localStorage.setItem("result",JSON.stringify(resultObj));
+
+					//【2.3.3 把用户的选项和JSON中的答案进行比较，看看对错】
+					if($(this).attr("data-num") == data.ta){
+						self.showAns("r");
+						var j = "r";
+					}else{
+						self.showAns("w");
+						var j = "w";
+					}
+
+					//【2.3.4 更改答题数据】
+					if(!alreadyAnswered){
+						//如果你这道题目不是现在答题的，而是已经答过的，本次点击option不计算。
+						var scoreobj = JSON.parse(localStorage.getItem("score"));
+						if(scoreobj == null){
+							scoreobj = {"yida":0,"zhengque":0,"cuowu":0,"zhengquelv":0};
+						}
+						scoreobj.yida++;
+						//答案正确
+						if(j == "r"){
+							scoreobj.zhengque++;
+						}else{
+							scoreobj.cuowu++;
+						}
+						//计算正确率
+						scoreobj.zhengquelv = parseInt(scoreobj.zhengque / scoreobj.yida * 10000) / 100 + "%";
+						//保存
+						localStorage.setItem("score",JSON.stringify(scoreobj));
+						//上屏
+						$(".info span").eq(0).html(scoreobj.yida);
+						$(".info span").eq(1).html(scoreobj.zhengque);
+						$(".info span").eq(2).html(scoreobj.cuowu);
+						$(".info span").eq(3).html(scoreobj.zhengquelv);
+					}
+				});
+
+				//【2.4 判定本地数据库中之前有没有做过这道题目】
+				var obj = JSON.parse(localStorage.getItem("result"));
+				//验证数据库中有没有result这个项
+				if(obj != null){
+					//如果有result这个项，试着读取答案
+					var daan = obj.results[id];
+					//如果答案不是null，就模拟点击一下对应的option即可
+					//trigger这里太好用了！让上帝帮我们按照数据库的值，按一下对应按钮。
+					if(daan != null && typeof daan == "string"){
+						self.$optionsBox.find("input[data-num=" + daan + "]").trigger("click");
+					}
+				}
+                  
+				//给本题讨论按钮绑定监听
+				//去掉之前的所有监听
+				$("#taolunBtn").off(); 
+				//绑定监听
+				$("#taolunBtn").on("click",function(){
+					alert(data.bestanswer)
+				});
+			 
+
+			//三、存储当前的题目编号
+			localStorage.setItem("nowid",id);
+		}
+	});
+	// };
+		//下一题、上一题、跳转到
+		Test.prototype.goNext = function(){
+			this.qid++;
+			this.getQuestion(this.qid);
+		}
+		Test.prototype.goPrev = function(){
+			this.qid--;
+			this.getQuestion(this.qid);
+		}
+		Test.prototype.goto = function(id){
+			this.qid = parseInt(id);
+			this.getQuestion(this.qid);
+		}
+		//绑定监听
+		Test.prototype.bindEvent = function(){
+			var self = this;
+			$("#nextBtn").click(function(){
+				self.goNext();
+			});
+			$("#prevBtn").click(function(){
+				self.goPrev();
+			});
+			$("#goBtn").click(function(){
+				self.goto(parseInt($("#num").val()));
+			});
+		}
+		//显示结果
+		Test.prototype.showAns = function(className){
+			if(className == "r"){
+				this.$ans.show();
+				this.$tip.attr("class","tip r").html("恭喜，正确！").show();
+			}else{
+				this.$ans.show();
+				this.$tip.attr("class","tip w").html("很遗憾，错误！").show();
+			}
+		}
+
+
+		// var test = new Test();
+		//  test(); 
+	</script>
+</body>
+</html>

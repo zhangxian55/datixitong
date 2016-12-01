@@ -1,0 +1,14 @@
+{
+	"id": "48",
+	"question": "前方路口这种信号灯亮表示什么意思？",
+	"a": "路口警示",
+	"b": "禁止通行",
+	"c": "准许通行",
+	"d": "提醒注意",
+	"ta": "3",
+	"imageurl": "http://ksimg.jxedt.com/2013pic/jxedt_6.jpg",
+	"bestanswer": "红灯停，绿灯行。",
+	"bestanswerid": "2600048",
+	"Type": "2",
+	"sinaimg": "5eb4d75agw1e28yo02ozyj.jpg"
+}

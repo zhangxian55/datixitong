@@ -1,0 +1,14 @@
+{
+	"id": "46",
+	"question": "前方路口这种信号灯亮表示什么意思？",
+	"a": "路口警示",
+	"b": "禁止通行",
+	"c": "准许通行",
+	"d": "提醒注意",
+	"ta": "2",
+	"imageurl": "http://ksimg.jxedt.com/2013pic/jxedt_4.jpg",
+	"bestanswer": "红灯停。但此题不经推敲，像这种情况，右转弯的车子在确认安全后是可以通行的。",
+	"bestanswerid": "2600046",
+	"Type": "2",
+	"sinaimg": "5eb4d75agw1e28ynx217gj.jpg"
+}
